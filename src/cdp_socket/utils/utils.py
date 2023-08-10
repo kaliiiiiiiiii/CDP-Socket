@@ -3,6 +3,9 @@ import json
 import os
 import subprocess
 import cdp_socket
+import socket
+from contextlib import closing
+import httpx
 
 IS_POSIX = sys.platform.startswith(("darwin", "cygwin", "linux", "linux2"))
 
@@ -94,16 +97,28 @@ def write_json(obj: dict or list, filename: str = "out.json", encoding: str = "u
         outfile.write(json.dumps(obj))
 
 
-def launch_chrome(binary_path: str = None, args: list = None):
+def random_port(host: str = None):
+    if not host:
+        host = ''
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind((host, 0))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return s.getsockname()[1]
+
+
+def launch_chrome(port: int, binary_path: str = None, args: list = None, data_dir_path: str = None):
     if not binary_path:
         binary_path = find_chrome_executable()
     if not args:
-        path = f"{cdp_sock_path()}files/tmp/data_dir"
-        if not os.path.exists(path):
-            os.makedirs(path, exist_ok=True)
-        args = ["--no-first-run", f'--user-data-dir={path}']
+        args = []
         if IS_POSIX:
             args.append("--password-store=basic")
+    if not data_dir_path:
+        data_dir_path = f"{cdp_sock_path()}files/tmp/data_dir"
+    if not os.path.exists(data_dir_path):
+        os.makedirs(data_dir_path, exist_ok=True)
+
+    args.extend([f'--user-data-dir={data_dir_path}', f"--remote-debugging-port={port}"])
     process = subprocess.Popen(
         [binary_path, *args],
         stdin=subprocess.PIPE,

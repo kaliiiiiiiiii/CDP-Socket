@@ -1,7 +1,7 @@
 import setuptools
 
 
-requirements = ['selenium~=4.6', 'requests~=2.28', 'pillow~=9.4', "selenium_profiles"]
+requirements = ['httpx']
 
 with open('README.md', 'r', encoding='utf-8') as fh:
     long_description = fh.read()

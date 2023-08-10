@@ -18,14 +18,73 @@
 
 #### getting started
 ```python
-from cdp_socket.utils.utils import launch_chrome
+from cdp_socket.utils.utils import launch_chrome, random_port
+from cdp_socket.utils.conn import get_websock_url
+
+from cdp_socket.socket import SingleCDPSocket
+
 import os
+import asyncio
 
-proc = launch_chrome()
 
-print()
+async def main():
+    PORT = random_port()
+    process = launch_chrome(PORT)
 
-os.kill(proc.pid, 15)
+    websock_url = await get_websock_url(PORT, timeout=5)
+    async with SingleCDPSocket(websock_url, timeout=5) as conn:
+        targets = await conn.exec("Target.getTargets")
+        print(targets)
+
+    os.kill(process.pid, 15)
+
+
+asyncio.run(main())
+```
+
+#### on_closed callback
+```python
+from cdp_socket.socket import SingleCDPSocket
+
+def on_closed(code, reason):
+    print("Closed with: ", code, reason)
+
+async with SingleCDPSocket('ws://localhost:52395/devtools/page/9E297E3F03148EFBC52F26EB3E5A6474', timeout=5) as conn:
+    conn.on_closed = on_closed
+    targets = await conn.exec("Target.getTargets")
+    print(targets)
+```
+
+#### add event listener
+```python
+from cdp_socket.socket import SingleCDPSocket
+import asyncio
+
+def on_detached(params):
+    print("Detached with: ", params)
+    
+async with SingleCDPSocket('ws://localhost:52395/devtools/page/9E297E3F03148EFBC52F26EB3E5A6474', timeout=5) as conn:
+        conn.add_listener('Inspector.detached', on_detached)
+        await asyncio.sleep(1000)
+```
+
+#### iterate over event
+```python
+from cdp_socket.socket import SingleCDPSocket
+
+async with SingleCDPSocket('ws://localhost:52395/devtools/page/9E297E3F03148EFBC52F26EB3E5A6474', timeout=5) as conn:
+    async for i in conn.method_iterator('Inspector.detached'):
+        print(i)
+        break
+```
+
+#### wait for event
+```python
+from cdp_socket.socket import SingleCDPSocket
+
+async with SingleCDPSocket('ws://localhost:52395/devtools/page/9E297E3F03148EFBC52F26EB3E5A6474', timeout=5) as conn:
+    res = await conn.wait_for('Inspector.detached')
+    print(res)
 ```
 
 ## Help
