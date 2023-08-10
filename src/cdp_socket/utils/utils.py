@@ -1,0 +1,114 @@
+import sys
+import json
+import os
+import subprocess
+import cdp_socket
+
+IS_POSIX = sys.platform.startswith(("darwin", "cygwin", "linux", "linux2"))
+
+
+def find_chrome_executable():
+    # from https://github.com/ultrafunkamsterdam/undetected-chromedriver/blob/1c704a71cf4f29181a59ecf19ddff32f1b4fbfc0/undetected_chromedriver/__init__.py#L844
+    # edited by kaliiiiiiiiii | Aurin Aegerter
+    """
+    Finds the chrome, chrome beta, chrome canary, chromium executable
+
+    Returns
+    -------
+    executable_path :  str
+        the full file path to found executable
+
+    """
+    candidates = set()
+    if IS_POSIX:
+        for item in os.environ.get("PATH").split(os.pathsep):
+            for subitem in (
+                    "google-chrome",
+                    "chromium",
+                    "chromium-browser",
+                    "chrome",
+                    "google-chrome-stable",
+            ):
+                candidates.add(os.sep.join((item, subitem)))
+        if "darwin" in sys.platform:
+            candidates.update(
+                [
+                    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+                ]
+            )
+    else:
+        for item in map(
+                os.environ.get,
+                ("PROGRAMFILES", "PROGRAMFILES(X86)", "LOCALAPPDATA", "PROGRAMW6432"),
+        ):
+            if item is not None:
+                for subitem in (
+                        "Google/Chrome/Application",
+                        "Google/Chrome Beta/Application",
+                        "Google/Chrome Canary/Application",
+                ):
+                    candidates.add(os.sep.join((item, subitem, "chrome.exe")))
+    for candidate in candidates:
+        if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+            return os.path.normpath(candidate)
+
+
+def cdp_sock_path():
+    return os.path.dirname(cdp_socket.__file__) + "/"
+
+
+def read(filename: str, encoding: str = "utf-8", sel_root: bool = True):
+    if sel_root:
+        path = cdp_sock_path() + filename
+    else:
+        path = filename
+    with open(path, encoding=encoding) as f:
+        return f.read()
+
+
+def write(filename: str, content: str, encoding: str = "utf-8", sel_root: bool = True):
+    if sel_root:
+        path = cdp_sock_path() + filename
+    else:
+        path = filename
+    with open(path, "w+", encoding=encoding) as f:
+        return f.write(content)
+
+
+def read_json(filename: str = 'example.json', encoding: str = "utf-8", sel_root: bool = True):
+    if sel_root:
+        path = cdp_sock_path() + filename
+    else:
+        path = filename
+    with open(path, 'r', encoding=encoding) as f:
+        return json.load(f)
+
+
+def write_json(obj: dict or list, filename: str = "out.json", encoding: str = "utf-8", sel_root=True):
+    if sel_root:
+        path = cdp_sock_path() + filename
+    else:
+        path = filename
+    with open(path, "w", encoding=encoding) as outfile:
+        outfile.write(json.dumps(obj))
+
+
+def launch_chrome(binary_path: str = None, args: list = None):
+    if not binary_path:
+        binary_path = find_chrome_executable()
+    if not args:
+        path = f"{cdp_sock_path()}files/tmp/data_dir"
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
+        args = ["--no-first-run", f'--user-data-dir={path}']
+        if IS_POSIX:
+            args.append("--password-store=basic")
+    process = subprocess.Popen(
+        [binary_path, *args],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        close_fds=IS_POSIX,
+    )
+    return process

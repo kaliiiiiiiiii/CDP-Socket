@@ -1,0 +1,7 @@
+include pyproject.toml
+include *.md
+include LICENSE.md
+recursive-include tests test*.py
+prune src/cdp_socket/files/tmp
+
+
