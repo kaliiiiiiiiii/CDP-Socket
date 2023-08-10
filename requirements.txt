@@ -1,2 +1,6 @@
 httpx~=0.24.1
 websockets~=11.0.3
+
+# dev
+twine
+setuptools~=68.0.0
