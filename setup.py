@@ -1,7 +1,7 @@
 import setuptools
 
 
-requirements = ['httpx']
+requirements = ['httpx~=0.24.1', 'websockets~=11.0.3']
 
 with open('README.md', 'r', encoding='utf-8') as fh:
     long_description = fh.read()
@@ -36,9 +36,8 @@ setuptools.setup(
         'License :: Free for non-commercial use',
         'Natural Language :: English',
         'Operating System :: OS Independent',
-        'Topic :: Internet :: Proxy Servers',
-        'Topic :: Internet',
-        'Topic :: Internet :: WWW/HTTP :: Browsers',
+        'Topic :: Communications',
+        'Topic :: Internet :: WWW/HTTP :: Browsers'
 
     ],
     python_requires='>=3.7',
