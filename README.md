@@ -1,6 +1,6 @@
 # CDP-Socket
 
-* Handle Chrome-Developer-Protocol connections
+* Handle [Chrome-Developer-Protocol](https://chromedevtools.github.io/devtools-protocol/) connections
 
 ### Feel free to test my code!
 
@@ -62,7 +62,8 @@ I am not responsible what you use the code for!!! Also no warranty!
 ## Acknowledgments
 
 Inspiration, code snippets, etc.
+- [Chrome-Developer-Protocol](https://chromedevtools.github.io/devtools-protocol/)
 
 ## contributors
 
-thanks to @Redrrx who gave me some starting-points
+- thanks to @Redrrx who gave me some starting-points
