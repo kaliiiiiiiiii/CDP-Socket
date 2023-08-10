@@ -75,7 +75,6 @@ class SingleCDPSocket:
     async def wait_for(self, method: str):
         _iter = self.method_iterator(method)
         res = await _iter.__anext__()
-        _iter.__del__()
         return res
 
     async def _rec_coro(self):
@@ -95,20 +94,23 @@ class SingleCDPSocket:
                         method = data.get("method")
                         params = data.get("params")
                         callbacks: callable = self._events[method]
-                        iter_callbacks = list(self._iter_callbacks[method].values())
-                        callbacks.extend(iter_callbacks)
                         for callback in callbacks:
-                            if callback:
-                                if inspect.iscoroutinefunction(callback):
-                                    # noinspection PyCallingNonCallable
-                                    await callback(params)
-                                else:
-                                    # noinspection PyCallingNonCallable
-                                    callback(params)
-
+                            await self._handle_callback(callback, params)
+                        for _id, callback in list(self._iter_callbacks[method].items()):
+                            await self._handle_callback(callback, params)
+                            del self._iter_callbacks[method][_id]
         except websockets.exceptions.ConnectionClosedError as e:
             if self.on_closed:
                 self.on_closed(code=e.code, reason=e.reason)
+
+    async def _handle_callback(self, callback: callable, params: dict):
+        if callback:
+            if inspect.iscoroutinefunction(callback):
+                # noinspection PyCallingNonCallable
+                await callback(params)
+            else:
+                # noinspection PyCallingNonCallable
+                callback(params)
 
     async def close(self, code: int = 1000, reason: str = ''):
         await self._ws.close(code=code, reason=reason)
