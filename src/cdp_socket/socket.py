@@ -64,8 +64,11 @@ class SingleCDPSocket:
         _id = await self.send(method=method, params=params)
         # noinspection PyStatementEffect
         self._responses[_id]
-        res = await asyncio.wait_for(self._responses[_id], timeout=timeout)
-        return res
+        res = await asyncio.gather(
+            asyncio.sleep(timeout),
+            asyncio.wait_for(self._responses[_id], timeout=timeout)
+        )
+        return res[1]
 
     def add_listener(self, method: str, callback: callable):
         self._events[method].append(callback)
@@ -113,7 +116,7 @@ class SingleCDPSocket:
         if callback:
             res = callback(*args, **kwargs)
             if inspect.isawaitable(res):
-                res = await res
+                res = self._loop.create_task(res)
             return res
 
     async def close(self, code: int = 1000, reason: str = ''):
