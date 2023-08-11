@@ -16,7 +16,35 @@
 * [Windows] Install [Chrome-Browser](https://www.google.de/chrome/)
 * ```pip install cdp-socket```
 
-### Single socket
+#### CDPSocket
+```python
+from cdp_socket.utils.utils import launch_chrome, random_port
+from cdp_socket.socket import CDPSocket
+
+import os
+import asyncio
+
+
+def on_detached(params):
+    print("Detached with: ", params)
+
+
+async def main():
+    PORT = random_port()
+    process = launch_chrome(PORT)
+    
+    async with CDPSocket(PORT) as base_socket:
+        targets = await base_socket.targets
+        sock1 = await base_socket.get_socket(targets[0])
+        targets = await sock1.exec("Target.getTargets")
+        print(targets)
+    os.kill(process.pid, 15)
+
+
+asyncio.run(main())
+```
+
+#### Single socket
 ```python
 from cdp_socket.utils.utils import launch_chrome, random_port
 from cdp_socket.utils.conn import get_websock_url
@@ -32,8 +60,8 @@ async def main():
     process = launch_chrome(PORT)
 
     websock_url = await get_websock_url(PORT, timeout=5)
-    async with SingleCDPSocket(websock_url, timeout=5) as conn:
-        targets = await conn.exec("Target.getTargets")
+    async with SingleCDPSocket(websock_url, timeout=5) as sock:
+        targets = await sock.exec("Target.getTargets")
         print(targets)
 
     os.kill(process.pid, 15)
@@ -49,10 +77,10 @@ from cdp_socket.socket import SingleCDPSocket
 def on_closed(code, reason):
     print("Closed with: ", code, reason)
 
-async with SingleCDPSocket('ws://localhost:52395/devtools/page/9E297E3F03148EFBC52F26EB3E5A6474', timeout=5) as conn:
-    conn.on_closed = on_closed
+async with SingleCDPSocket(websock_url, timeout=5) as sock:
+    sock.on_closed.append(on_closed)
     # close window for dispatching this event
-    targets = await conn.exec("Target.getTargets")
+    targets = await sock.exec("Target.getTargets")
     print(targets)
 ```
 
@@ -64,9 +92,9 @@ import asyncio
 def on_detached(params):
     print("Detached with: ", params)
     
-async with SingleCDPSocket(websock_url, timeout=5) as conn:
+async with SingleCDPSocket(websock_url, timeout=5) as sock:
         # close window for dispatching this event
-        conn.add_listener('Inspector.detached', on_detached)
+        sock.add_listener('Inspector.detached', on_detached)
         await asyncio.sleep(1000)
 ```
 
@@ -74,8 +102,8 @@ async with SingleCDPSocket(websock_url, timeout=5) as conn:
 ```python
 from cdp_socket.socket import SingleCDPSocket
 
-async with SingleCDPSocket(websock_url, timeout=5) as conn:
-    async for i in conn.method_iterator('Inspector.detached'):
+async with SingleCDPSocket(websock_url, timeout=5) as sock:
+    async for i in sock.method_iterator('Inspector.detached'):
         print(i)
         break
 ```
@@ -84,8 +112,8 @@ async with SingleCDPSocket(websock_url, timeout=5) as conn:
 ```python
 from cdp_socket.socket import SingleCDPSocket
 
-async with SingleCDPSocket(websock_url, timeout=5) as conn:
-    res = await conn.wait_for('Inspector.detached')
+async with SingleCDPSocket(websock_url, timeout=5) as sock:
+    res = await sock.wait_for('Inspector.detached')
     print(res)
 ```
 
