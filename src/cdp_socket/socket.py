@@ -134,6 +134,15 @@ class SingleCDPSocket:
     def id(self):
         return self._id
 
+    def __eq__(self, other):
+        if isinstance(other, SingleCDPSocket):
+            return self._ws.id == other._ws.id
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 class CDPSocket:
     def __init__(self, port: int, host: str = "localhost", timeout: int = 10, loop=None):
@@ -176,22 +185,26 @@ class CDPSocket:
     async def targets(self):
         return await get_json(self.host, timeout=2)
 
-    async def get_socket(self, target: dict = None, sock_id: str = None, timeout=10):
+    async def get_socket(self, target: dict = None, sock_id: str = None,
+                         ensure_new: bool = False, timeout: float or None = 10):
         if not (target or sock_id) or (target and sock_id):
             return ValueError("expected either target or sock_id")
         if target:
-            sock_url = target['webSocketDebuggerUrl']
+            sock_id = target["id"]
+        sock_url = f'ws://{self.host}/devtools/page/{sock_id}'
+
+        existing = self.sockets[sock_id]
+        if existing and (not ensure_new):
+            socket = existing
         else:
-            sock_url = f'ws://{self.host}/devtools/page/{sock_id}'
-        socket = await SingleCDPSocket(sock_url, timeout=timeout, loop=self._loop)
-        # noinspection PyTypeChecker
-        self._sockets[socket.id] = socket
+            socket = await SingleCDPSocket(sock_url, timeout=timeout, loop=self._loop)
+            self._sockets[sock_id] = socket
 
-        # noinspection PyUnusedLocal
-        def remove_sock(code, reason):
-            del self._sockets[socket.id]
+            # noinspection PyUnusedLocal
+            def remove_sock(code, reason):
+                del self._sockets[socket.id]
 
-        socket.on_closed.append(remove_sock)
+            socket.on_closed.append(remove_sock)
         return socket
 
     @property
