@@ -102,7 +102,7 @@ class SingleCDPSocket:
                         for callback in callbacks:
                             await self._handle_callback(callback, params)
                         for _id, callback in list(self._iter_callbacks[method].items()):
-                            await self._handle_callback(callback, params=params)
+                            await self._handle_callback(callback, params)
                             del self._iter_callbacks[method][_id]
         except websockets.exceptions.ConnectionClosedError as e:
             if self.on_closed:
@@ -111,10 +111,10 @@ class SingleCDPSocket:
 
     async def _handle_callback(self, callback: callable, *args, **kwargs):
         if callback:
-            if inspect.iscoroutinefunction(callback):
-                return await callback(*args, *kwargs)
-            else:
-                return callback(*args, **kwargs)
+            res = callback(*args, **kwargs)
+            if inspect.isawaitable(res):
+                res = await res
+            return res
 
     async def close(self, code: int = 1000, reason: str = ''):
         await self._ws.close(code=code, reason=reason)
