@@ -117,6 +117,30 @@ async with SingleCDPSocket(websock_url, timeout=5) as sock:
     print(res)
 ```
 
+#### synchronous
+```python
+from cdp_socket.utils.utils import launch_chrome, random_port
+from cdp_socket.utils.conn import get_websock_url
+
+from cdp_socket.socket import SingleCDPSocket
+
+import os
+import asyncio
+
+PORT = random_port()
+process = launch_chrome(PORT)
+
+loop = asyncio.get_event_loop()
+websock_url = loop.run_until_complete(get_websock_url(PORT, timeout=5))
+
+conn = loop.run_until_complete(SingleCDPSocket(websock_url, timeout=5, loop=loop))
+targets = loop.run_until_complete(conn.exec("Target.getTargets"))
+print(targets)
+
+os.kill(process.pid, 15)
+
+```
+
 ## Help
 
 Please feel free to open an issue or fork!
