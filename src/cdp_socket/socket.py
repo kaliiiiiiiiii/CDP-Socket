@@ -64,8 +64,11 @@ class SingleCDPSocket:
         _id = await self.send(method=method, params=params)
         # noinspection PyStatementEffect
         self._responses[_id]
-        res = await asyncio.wait_for(self._responses[_id], timeout=timeout)
-        return res
+        res = await asyncio.gather(
+            asyncio.sleep(timeout),
+            asyncio.wait_for(self._responses[_id], timeout=timeout)
+        )
+        return res[1]
 
     def add_listener(self, method: str, callback: callable):
         self._events[method].append(callback)
@@ -102,7 +105,7 @@ class SingleCDPSocket:
                         for callback in callbacks:
                             await self._handle_callback(callback, params)
                         for _id, callback in list(self._iter_callbacks[method].items()):
-                            await self._handle_callback(callback, params=params)
+                            await self._handle_callback(callback, params)
                             del self._iter_callbacks[method][_id]
         except websockets.exceptions.ConnectionClosedError as e:
             if self.on_closed:
@@ -111,10 +114,10 @@ class SingleCDPSocket:
 
     async def _handle_callback(self, callback: callable, *args, **kwargs):
         if callback:
-            if inspect.iscoroutinefunction(callback):
-                return await callback(*args, *kwargs)
-            else:
-                return callback(*args, **kwargs)
+            res = callback(*args, **kwargs)
+            if inspect.isawaitable(res):
+                res = self._loop.create_task(res)
+            return res
 
     async def close(self, code: int = 1000, reason: str = ''):
         await self._ws.close(code=code, reason=reason)
@@ -130,6 +133,15 @@ class SingleCDPSocket:
     @property
     def id(self):
         return self._id
+
+    def __eq__(self, other):
+        if isinstance(other, SingleCDPSocket):
+            return self._ws.id == other._ws.id
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class CDPSocket:
@@ -173,22 +185,26 @@ class CDPSocket:
     async def targets(self):
         return await get_json(self.host, timeout=2)
 
-    async def get_socket(self, target: dict = None, sock_id: str = None, timeout=10):
+    async def get_socket(self, target: dict = None, sock_id: str = None,
+                         ensure_new: bool = False, timeout: float or None = 10):
         if not (target or sock_id) or (target and sock_id):
             return ValueError("expected either target or sock_id")
         if target:
-            sock_url = target['webSocketDebuggerUrl']
+            sock_id = target["id"]
+        sock_url = f'ws://{self.host}/devtools/page/{sock_id}'
+
+        existing = self.sockets[sock_id]
+        if existing and (not ensure_new):
+            socket = existing
         else:
-            sock_url = f'ws://{self.host}/devtools/page/{sock_id}'
-        socket = await SingleCDPSocket(sock_url, timeout=timeout, loop=self._loop)
-        # noinspection PyTypeChecker
-        self._sockets[socket.id] = socket
+            socket = await SingleCDPSocket(sock_url, timeout=timeout, loop=self._loop)
+            self._sockets[sock_id] = socket
 
-        # noinspection PyUnusedLocal
-        def remove_sock(code, reason):
-            del self._sockets[socket.id]
+            # noinspection PyUnusedLocal
+            def remove_sock(code, reason):
+                del self._sockets[socket.id]
 
-        socket.on_closed.append(remove_sock)
+            socket.on_closed.append(remove_sock)
         return socket
 
     @property

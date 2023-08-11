@@ -24,11 +24,6 @@ from cdp_socket.socket import CDPSocket
 import os
 import asyncio
 
-
-def on_detached(params):
-    print("Detached with: ", params)
-
-
 async def main():
     PORT = random_port()
     process = launch_chrome(PORT)
