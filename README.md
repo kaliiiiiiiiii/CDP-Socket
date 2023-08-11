@@ -174,4 +174,4 @@ Inspiration, code snippets, etc.
 
 ## contributors
 
-- thanks to @Redrrx who gave me some starting-points
+- thanks to [@Redrrx](https://github.com/Redrrx) who gave me some starting-points
