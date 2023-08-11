@@ -11,20 +11,20 @@ global pid
 loop = asyncio.get_event_loop()
 
 
-
-
-async def test_async_exec():
+async def test_exec():
     global sock
-    res = await sock.exec("Target.getTargets")
-    return res
+    res = await sock.exec("Browser.getVersion")
+    product = res['product']
+    return f"product: {product}"
 
 
-async def test_async_wait_for():
+async def test_wait_for():
     global loop
     await sock.exec("Page.enable")
-    loop.create_task(sock.exec("Page.navigate", {"url": "https://nowsecure.nl#relax"}))
+    loop.create_task(sock.exec("Page.navigate", {"url": "chrome://version"}))
     res = await sock.wait_for("Page.domContentEventFired")
-    return res
+    monotonic_time = res['timestamp']
+    return f"TimeStamp: {monotonic_time}"
 
 
 async def make_socket():
@@ -50,8 +50,11 @@ class Driver(unittest.TestCase):
 
     async def _test_all(self):
         await make_socket()
-        await test_async_exec()
-        await test_async_wait_for()
+        res = await asyncio.gather(
+            test_exec(),
+            test_wait_for()
+        )
+        print("\n".join(res))
         await sock.close()
         os.kill(pid, 15)
 
