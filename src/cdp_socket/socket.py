@@ -4,6 +4,8 @@ from collections import defaultdict
 import websockets
 import inspect
 import typing
+import warnings
+
 from cdp_socket.exceptions import CDPError
 from cdp_socket.utils.conn import get_websock_url, get_json
 
@@ -117,7 +119,12 @@ class SingleCDPSocket:
             return res
 
     async def close(self, code: int = 1000, reason: str = ''):
-        await self._ws.close(code=code, reason=reason)
+        if self._ws.open:
+            self._loop.create_task(self._ws.close(code=code, reason=reason))
+            try:
+                await asyncio.wait_for(self._task, 2)
+            except asyncio.TimeoutError:
+                warnings.warn(RuntimeWarning("socket didn't close properly within 2s"))
 
     @property
     def closed(self):
