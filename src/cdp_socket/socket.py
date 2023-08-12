@@ -120,11 +120,15 @@ class SingleCDPSocket:
 
     async def close(self, code: int = 1000, reason: str = ''):
         if self._ws.open:
-            self._loop.create_task(self._ws.close(code=code, reason=reason))
+            task = self._loop.create_task(self._ws.close(code=code, reason=reason))
             try:
-                await asyncio.wait_for(self._task, 2)
-            except asyncio.TimeoutError:
-                warnings.warn(RuntimeWarning("socket didn't close properly within 2s"))
+                await task
+            except AttributeError as e:
+                if e.args[0] == "'NoneType' object has no attribute 'encode'":
+                    # closed
+                    pass
+                else:
+                    raise e
 
     @property
     def closed(self):
