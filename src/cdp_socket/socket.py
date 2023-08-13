@@ -84,7 +84,9 @@ class SingleCDPSocket:
         try:
             res = await asyncio.wait_for(_iter.__anext__(), timeout)
         except asyncio.TimeoutError as e:
-            del self._iter_callbacks[_iter.id]
+            _id = _iter.id
+            if _id in self._iter_callbacks:
+                del self._iter_callbacks[_iter.id]
             raise e
         return res
 
