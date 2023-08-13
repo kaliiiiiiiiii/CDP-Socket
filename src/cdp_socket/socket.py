@@ -79,9 +79,13 @@ class SingleCDPSocket:
         from cdp_socket.scripts.abstract import CDPEventIter
         return CDPEventIter(method=method, socket=self)
 
-    async def wait_for(self, method: str):
+    async def wait_for(self, method: str, timeout=None):
         _iter = self.method_iterator(method)
-        res = await _iter.__anext__()
+        try:
+            res = await asyncio.wait_for(_iter.__anext__(), timeout)
+        except asyncio.TimeoutError as e:
+            del self._iter_callbacks[_iter.id]
+            raise e
         return res
 
     async def _rec_coro(self):

@@ -21,3 +21,7 @@ class CDPEventIter(object):
     async def __anext__(self) -> asyncio.Future:
         self._new_fut()
         return await self._fut
+
+    @property
+    def id(self):
+        return self._id
