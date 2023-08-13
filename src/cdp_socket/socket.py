@@ -219,7 +219,9 @@ class CDPSocket:
 
             # noinspection PyUnusedLocal
             def remove_sock(code, reason):
-                del self._sockets[socket.id]
+                _id = socket.id
+                if _id in self._sockets:
+                    del self._sockets[_id]
 
             socket.on_closed.append(remove_sock)
         return socket
