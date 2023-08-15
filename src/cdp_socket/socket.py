@@ -69,7 +69,8 @@ class SingleCDPSocket:
         try:
             return await asyncio.wait_for(self._responses[_id], timeout=timeout)
         except asyncio.TimeoutError as e:
-            del self._responses[_id]
+            if _id in self._responses:
+                del self._responses[_id]
             raise e
 
     def add_listener(self, method: str, callback: callable):
@@ -89,7 +90,7 @@ class SingleCDPSocket:
         except asyncio.TimeoutError as e:
             _id = _iter.id
             if _id in self._iter_callbacks:
-                del self._iter_callbacks[_iter.id]
+                del self._iter_callbacks[_id]
             raise e
         return res
 
@@ -219,7 +220,9 @@ class CDPSocket:
 
             # noinspection PyUnusedLocal
             def remove_sock(code, reason):
-                del self._sockets[socket.id]
+                _id = socket.id
+                if _id in self._sockets:
+                    del self._sockets[_id]
 
             socket.on_closed.append(remove_sock)
         return socket
