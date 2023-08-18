@@ -3,13 +3,13 @@ import json
 import asyncio
 
 
-async def get_http(url: str, timeout:float or None=10):
+async def get_http(url: str, timeout: float or None = 10):
     async with httpx.AsyncClient() as client:
         result = await client.get(url=url, timeout=timeout)
     return result
 
 
-async def get_json(host: str, timeout:float or None=10):
+async def get_json(host: str, timeout: float or None = 10):
     res = None
     while not res:
         try:
@@ -19,7 +19,7 @@ async def get_json(host: str, timeout:float or None=10):
     return json.loads(res.text)
 
 
-async def get_websock_url(port: int, host: str = "localhost", timeout: float or None = 10):
+async def get_websock_url(port: int, host: str = "127.0.0.1", timeout: float or None = 10):
     host = f"{host}:{port}"
     try:
         _json = await get_json(host, timeout=timeout)
