@@ -54,7 +54,7 @@ class Driver(unittest.TestCase):
             test_exec(),
             test_wait_for()
         )
-        print("\n".join(res))
+        print("\n".join(res)+"\n")
         await sock.close()
         os.kill(pid, 15)
 

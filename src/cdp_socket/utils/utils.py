@@ -1,11 +1,11 @@
-import sys
 import json
 import os
-import subprocess
-import cdp_socket
 import socket
+import subprocess
+import sys
 from contextlib import closing
-import httpx
+
+import cdp_socket
 
 IS_POSIX = sys.platform.startswith(("darwin", "cygwin", "linux", "linux2"))
 

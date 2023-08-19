@@ -4,7 +4,6 @@ from collections import defaultdict
 import websockets
 import inspect
 import typing
-import warnings
 
 from cdp_socket.exceptions import CDPError
 from cdp_socket.utils.conn import get_websock_url, get_json
@@ -163,7 +162,7 @@ class SingleCDPSocket:
 
 
 class CDPSocket:
-    def __init__(self, port: int, host: str = "localhost", timeout: int = 10, loop=None):
+    def __init__(self, port: int, host: str = "127.0.0.1", timeout: int = 30, loop=None):
         if not loop:
             loop = asyncio.get_event_loop()
         self._port = port
@@ -186,7 +185,7 @@ class CDPSocket:
         return await asyncio.wait_for(self._connect(), timeout=timeout)
 
     async def _connect(self):
-        ws_url = await get_websock_url(self._port, self._host_, timeout=None)
+        ws_url = await get_websock_url(self._port, self._host_, timeout=self._timeout)
         conn = await SingleCDPSocket(ws_url)
         await conn.close()
         return self
