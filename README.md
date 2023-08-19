@@ -163,6 +163,9 @@ This work is licensed under a
 [cc-by-nc-sa-image]: https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png
 [cc-by-nc-sa-shield]: https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg
 
+## known bugs
+- [ ] timeout doesn't raise in `httpx` ([bug](https://github.com/encode/httpx/discussions/2142))
+
 ## Disclaimer
 
 I am not responsible what you use the code for!!! Also no warranty!
