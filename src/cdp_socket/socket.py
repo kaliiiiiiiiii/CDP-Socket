@@ -10,7 +10,8 @@ from cdp_socket.utils.conn import get_websock_url, get_json
 
 
 class SingleCDPSocket:
-    def __init__(self, websock_url: str, timeout: float = 10, loop: asyncio.AbstractEventLoop = None):
+    def __init__(self, websock_url: str, timeout: float = 10, loop: asyncio.AbstractEventLoop = None,
+                 max_size: int = 2 ** 20):
         self._task = None
         if not loop:
             loop = asyncio.get_running_loop()
@@ -18,6 +19,7 @@ class SingleCDPSocket:
         self._url = websock_url
         self._timeout = timeout
         self._req_count = 0
+        self._max_size = max_size
         self._responses = defaultdict(lambda: asyncio.Future())
         self._events = defaultdict(lambda: [])
         self._iter_callbacks = defaultdict(lambda: {})
@@ -38,7 +40,8 @@ class SingleCDPSocket:
     async def start_session(self, timeout: float = 10):
         try:
             self._ws: websockets.WebSocketClientProtocol = await websockets.connect(uri=self._url,
-                                                                                    open_timeout=timeout)
+                                                                                    open_timeout=timeout,
+                                                                                    max_size=self._max_size)
         except asyncio.TimeoutError:
             raise asyncio.TimeoutError(f"Couldn't connect to websocket within {timeout} seconds")
         self._task = self._loop.create_task(self._rec_coro())
@@ -162,10 +165,11 @@ class SingleCDPSocket:
 
 
 class CDPSocket:
-    def __init__(self, port: int, host: str = "127.0.0.1", timeout: int = 30, loop=None):
+    def __init__(self, port: int, host: str = "127.0.0.1", timeout: int = 30, loop=None, max_size: int = 2 ** 20):
         if not loop:
             loop = asyncio.get_event_loop()
         self._port = port
+        self._max_size = max_size
         self._host_ = host
         self._host = f"{host}:{port}"
         self._timeout = timeout
@@ -186,7 +190,7 @@ class CDPSocket:
 
     async def _connect(self):
         ws_url = await get_websock_url(self._port, self._host_, timeout=self._timeout)
-        conn = await SingleCDPSocket(ws_url)
+        conn = await SingleCDPSocket(ws_url, max_size=self._max_size)
         await conn.close()
         return self
 
@@ -214,7 +218,7 @@ class CDPSocket:
         if existing and (not ensure_new):
             socket = existing
         else:
-            socket = await SingleCDPSocket(sock_url, timeout=timeout, loop=self._loop)
+            socket = await SingleCDPSocket(sock_url, timeout=timeout, loop=self._loop, max_size=self._max_size)
             self._sockets[sock_id] = socket
 
             # noinspection PyUnusedLocal
