@@ -69,8 +69,10 @@ class SingleCDPSocket:
         # noinspection PyStatementEffect
         self._responses[_id]
         try:
-            return await asyncio.wait_for(self._responses[_id], timeout=timeout)
-        except asyncio.TimeoutError as e:
+            res = await asyncio.wait_for(self._responses[_id], timeout=timeout)
+            del self._responses[_id]
+            return res
+        except Exception as e:
             if _id in self._responses:
                 del self._responses[_id]
             raise e
