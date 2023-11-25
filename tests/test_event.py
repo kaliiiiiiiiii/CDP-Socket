@@ -23,7 +23,7 @@ async def main():
         target = targets[0]
         sock1 = await base_socket.get_socket(target)
         await sock1.exec("Network.clearBrowserCookies")
-        # await sock1.exec("Fetch.enable")
+        await sock1.exec("Fetch.enable")
         sock1.add_listener("Fetch.requestPaused", on_resumed)
         await sock1.exec("Page.navigate", {"url": "https://nowsecure.nl#relax"})
         await asyncio.sleep(5)
