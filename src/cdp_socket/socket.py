@@ -1,5 +1,5 @@
 import asyncio
-import json
+import orjson
 from collections import defaultdict
 import websockets
 import inspect
@@ -48,6 +48,7 @@ class SingleCDPSocket:
         self._task.add_done_callback(self._exc_handler)
         return self
 
+    # noinspection PyMethodMayBeStatic
     def _exc_handler(self, task):
         # noinspection PyProtectedMember
         exc = task._exception
@@ -59,7 +60,7 @@ class SingleCDPSocket:
         _dict = {'id': _id, 'method': method}
         if params:
             _dict['params'] = params
-        await self._ws.send(json.dumps(_dict))
+        await self._ws.send(orjson.dumps(_dict))
         self._req_count += 1
         return _id
 
@@ -102,7 +103,7 @@ class SingleCDPSocket:
         # noinspection PyUnresolvedReferences
         try:
             async for data in self._ws:
-                data = json.loads(data)
+                data = orjson.loads(data)
                 err = data.get('error')
                 _id = data.get("id")
                 if not (err is None):
@@ -110,7 +111,10 @@ class SingleCDPSocket:
                     self._responses[_id].set_exception(exc)
                 else:
                     if not (_id is None):
-                        self._responses[_id].set_result(data["result"])
+                        try:
+                            self._responses[_id].set_result(data["result"])
+                        except asyncio.InvalidStateError:
+                            del self._responses[_id]
                     else:
                         method = data.get("method")
                         params = data.get("params")
@@ -124,6 +128,7 @@ class SingleCDPSocket:
             if self.on_closed:
                 for callback in self.on_closed:
                     await self._handle_callback(callback, code=e.code, reason=e.reason)
+        await asyncio.sleep(0)
 
     async def _handle_callback(self, callback: callable, *args, **kwargs):
         if callback:
