@@ -110,7 +110,10 @@ class SingleCDPSocket:
                     self._responses[_id].set_exception(exc)
                 else:
                     if not (_id is None):
-                        self._responses[_id].set_result(data["result"])
+                        try:
+                            self._responses[_id].set_result(data["result"])
+                        except asyncio.InvalidStateError:
+                            del self._responses[_id]
                     else:
                         method = data.get("method")
                         params = data.get("params")
