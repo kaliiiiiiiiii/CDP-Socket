@@ -87,8 +87,8 @@ class Driver(unittest.TestCase):
     # noinspection PyMethodMayBeStatic
     async def _all(self):
         await make_socket()
-        await check_wait_for()
         print(await check_exec())
+        await check_wait_for()
         print(await benchmark())
         await sock.close()
         os.kill(pid, 15)
