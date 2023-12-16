@@ -140,7 +140,21 @@ os.kill(process.pid, 15)
 
 Please feel free to open an issue or fork!
 
-## Todo
+## Performance
+On a Win10 Laptop
+
+executing `"Browser.getVersion"`
+```
+Static benchmark:
+passed 3_640.0 mB  in 2.74 s, 13_308.958 mB/sec 
+3_656 (each 364 bytes) exec per sec.
+```
+for returning a big (static) object over javascript
+```
+JS benchmark:
+passed 22_990.0 mB in 3.16 s, 7_284.5374 mB/sec 
+1_584 (each 4.598 mB) exec (JS) per s
+```
 
 
 
