@@ -2,7 +2,6 @@ from cdp_socket.utils.utils import launch_chrome, random_port
 from cdp_socket.socket import CDPSocket
 import os
 import asyncio
-import threading
 
 global sock1
 
