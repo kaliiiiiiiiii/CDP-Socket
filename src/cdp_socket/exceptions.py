@@ -3,3 +3,7 @@ class CDPError(Exception):
         self.code = error["code"]
         self.message = error["message"]
         super().__init__(error)
+
+
+class SocketExcitedError(Exception):
+    pass

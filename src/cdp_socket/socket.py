@@ -1,11 +1,14 @@
 import asyncio
+import sys
+
 import orjson
 from collections import defaultdict
 import websockets
 import inspect
 import typing
+import json
 
-from cdp_socket.exceptions import CDPError
+from cdp_socket.exceptions import CDPError, SocketExcitedError
 from cdp_socket.utils.conn import get_websock_url, get_json
 
 
@@ -26,6 +29,7 @@ class SingleCDPSocket:
         self._loop = loop
         self.on_closed = []
         self._id = websock_url.split("/")[-1]
+        self._exc = None
 
     def __await__(self):
         return self.start_session(timeout=self._timeout).__await__()
@@ -60,7 +64,7 @@ class SingleCDPSocket:
         _dict = {'id': _id, 'method': method}
         if params:
             _dict['params'] = params
-        await self._ws.send(orjson.dumps(_dict))
+        await self._ws.send(json.dumps(_dict))
         self._req_count += 1
         return _id
 
@@ -73,10 +77,19 @@ class SingleCDPSocket:
             res = await asyncio.wait_for(self._responses[_id], timeout=timeout)
             del self._responses[_id]
             return res
-        except Exception as e:
-            if _id in self._responses:
-                del self._responses[_id]
-            raise e
+        except asyncio.TimeoutError:
+            if self._task.done():
+                # task has excited
+                # noinspection PyProtectedMember
+                if self._exc:
+                    raise self._exc
+                elif self._task._exception:
+                    # noinspection PyProtectedMember
+                    raise self._task._exception
+                else:
+                    raise SocketExcitedError("socket coroutine excited without exception")
+            raise TimeoutError(f'got no response for method: "{method}", params: {params}'
+                               f"\nwithin {timeout} seconds")
 
     def add_listener(self, method: str, callback: callable):
         self._events[method].append(callback)
@@ -103,19 +116,14 @@ class SingleCDPSocket:
         # noinspection PyUnresolvedReferences
         try:
             async for data in self._ws:
-                data = orjson.loads(data)
+                if sys.getsizeof(data) > 8000:
+                    data = orjson.loads(data)
+                else:
+                    data = json.loads(data)
                 err = data.get('error')
                 _id = data.get("id")
-                if not (err is None):
-                    exc = CDPError(error=err)
-                    self._responses[_id].set_exception(exc)
-                else:
-                    if not (_id is None):
-                        try:
-                            self._responses[_id].set_result(data["result"])
-                        except asyncio.InvalidStateError:
-                            del self._responses[_id]
-                    else:
+                if err is None:
+                    if _id is None:
                         method = data.get("method")
                         params = data.get("params")
                         callbacks: callable = self._events[method]
@@ -124,11 +132,19 @@ class SingleCDPSocket:
                         for _id, callback in list(self._iter_callbacks[method].items()):
                             await self._handle_callback(callback, params)
                             del self._iter_callbacks[method][_id]
+                    else:
+                        try:
+                            self._responses[_id].set_result(data["result"])
+                        except asyncio.InvalidStateError:
+                            del self._responses[_id]
+                else:
+                    exc = CDPError(error=err)
+                    self._responses[_id].set_exception(exc)
         except websockets.exceptions.ConnectionClosedError as e:
             if self.on_closed:
+                self._exc = e
                 for callback in self.on_closed:
                     await self._handle_callback(callback, code=e.code, reason=e.reason)
-        await asyncio.sleep(0)
 
     async def _handle_callback(self, callback: callable, *args, **kwargs):
         if callback:
@@ -139,9 +155,8 @@ class SingleCDPSocket:
 
     async def close(self, code: int = 1000, reason: str = ''):
         if self._ws.open:
-            task = self._loop.create_task(self._ws.close(code=code, reason=reason))
             try:
-                await task
+                await self._ws.close(code=code, reason=reason)
             except AttributeError as e:
                 if e.args[0] == "'NoneType' object has no attribute 'encode'":
                     # closed
