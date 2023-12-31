@@ -25,8 +25,9 @@ import os
 import asyncio
 
 async def main():
+    data_dir = os.getcwd()+"/data_dir"
     PORT = random_port()
-    process = launch_chrome(PORT)
+    process = launch_chrome(data_dir,PORT)
     
     async with CDPSocket(PORT) as base_socket:
         targets = await base_socket.targets
@@ -51,8 +52,9 @@ import asyncio
 
 
 async def main():
+    data_dir = os.getcwd()+"/data_dir"
     PORT = random_port()
-    process = launch_chrome(PORT)
+    process = launch_chrome(data_dir,PORT)
 
     websock_url = await get_websock_url(PORT, timeout=5)
     async with SingleCDPSocket(websock_url, timeout=5) as sock:
@@ -120,10 +122,12 @@ from cdp_socket.utils.conn import get_websock_url
 from cdp_socket.socket import SingleCDPSocket
 
 import os
+import shutil
 import asyncio
 
+data_dir = os.getcwd()+"/data_dir"
 PORT = random_port()
-process = launch_chrome(PORT)
+process = launch_chrome(data_dir,PORT)
 
 loop = asyncio.get_event_loop()
 websock_url = loop.run_until_complete(get_websock_url(PORT, timeout=5))
@@ -133,7 +137,7 @@ targets = loop.run_until_complete(conn.exec("Target.getTargets"))
 print(targets)
 
 os.kill(process.pid, 15)
-
+shutil.rmtree(data_dir)
 ```
 
 ## Help

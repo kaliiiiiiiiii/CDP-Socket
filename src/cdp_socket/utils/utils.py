@@ -106,15 +106,13 @@ def random_port(host: str = None):
         return s.getsockname()[1]
 
 
-def launch_chrome(port: int, binary_path: str = None, args: list = None, data_dir_path: str = None):
+def launch_chrome(data_dir_path: str, port: int, binary_path: str = None, args: list = None, ):
     if not binary_path:
         binary_path = find_chrome_executable()
     if not args:
         args = []
         if IS_POSIX:
             args.append("--password-store=basic")
-    if not data_dir_path:
-        data_dir_path = f"{cdp_sock_path()}files/tmp/data_dir"
     if not os.path.exists(data_dir_path):
         os.makedirs(data_dir_path, exist_ok=True)
 

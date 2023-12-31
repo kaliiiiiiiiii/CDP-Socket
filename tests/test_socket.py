@@ -12,6 +12,7 @@ import sys
 
 global sock
 global pid
+data_dir = os.getcwd()+"/data_dir"
 loop = asyncio.get_event_loop()
 
 
@@ -69,7 +70,7 @@ async def make_socket():
     PORT = random_port()
 
     warnings.simplefilter(action='ignore', category=ResourceWarning)
-    pid = launch_chrome(PORT).pid
+    pid = launch_chrome(data_dir, PORT).pid
     warnings.simplefilter("always")
 
     base_socket = await CDPSocket(PORT)
