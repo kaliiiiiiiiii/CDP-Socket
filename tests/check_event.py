@@ -4,6 +4,7 @@ import os
 import asyncio
 
 global sock1
+data_dir = os.getcwd()+"/data_dir"
 
 
 async def on_resumed(params):
@@ -15,7 +16,7 @@ async def on_resumed(params):
 async def main():
     global sock1
     PORT = random_port()
-    process = launch_chrome(PORT)
+    process = launch_chrome(data_dir,PORT)
 
     async with CDPSocket(PORT) as base_socket:
         targets = await base_socket.targets
