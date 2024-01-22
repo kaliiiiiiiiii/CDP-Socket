@@ -130,7 +130,10 @@ class SingleCDPSocket:
                         for callback in callbacks:
                             await self._handle_callback(callback, params)
                         for _id, callback in list(self._iter_callbacks[method].items()):
-                            await self._handle_callback(callback, params)
+                            try:
+                                await self._handle_callback(callback, params)
+                            except asyncio.InvalidStateError:
+                                pass # callback got cancelled
                             del self._iter_callbacks[method][_id]
                     else:
                         try:
