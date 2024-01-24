@@ -16,30 +16,6 @@
 * [Windows] Install [Chrome-Browser](https://www.google.de/chrome/)
 * ```pip install cdp-socket```
 
-#### CDPSocket
-```python
-from cdp_socket.utils.utils import launch_chrome, random_port
-from cdp_socket.socket import CDPSocket
-
-import os
-import asyncio
-
-async def main():
-    data_dir = os.getcwd()+"/data_dir"
-    PORT = random_port()
-    process = launch_chrome(data_dir,PORT)
-    
-    async with CDPSocket(PORT) as base_socket:
-        targets = await base_socket.targets
-        sock1 = await base_socket.get_socket(targets[0])
-        targets = await sock1.exec("Target.getTargets")
-        print(targets)
-    os.kill(process.pid, 15)
-
-
-asyncio.run(main())
-```
-
 #### Single socket
 ```python
 from cdp_socket.utils.utils import launch_chrome, random_port
@@ -140,6 +116,30 @@ os.kill(process.pid, 15)
 shutil.rmtree(data_dir)
 ```
 
+#### CDPSocket
+```python
+from cdp_socket.utils.utils import launch_chrome, random_port
+from cdp_socket.socket import CDPSocket
+
+import os
+import asyncio
+
+async def main():
+    data_dir = os.getcwd()+"/data_dir"
+    PORT = random_port()
+    process = launch_chrome(data_dir,PORT)
+    
+    async with CDPSocket(PORT) as base_socket:
+        targets = await base_socket.targets
+        sock1 = await base_socket.get_socket(targets[0])
+        targets = await sock1.exec("Target.getTargets")
+        print(targets)
+    os.kill(process.pid, 15)
+
+
+asyncio.run(main())
+```
+
 ## Help
 
 Please feel free to open an issue or fork!
@@ -161,28 +161,9 @@ passed 22_990.0 mB in 3.16 s, 7_284.5374 mB/sec
 ```
 
 
-
-## Deprecated
-
 ## Authors
 
 [Aurin Aegerter](mailto:aurinliun@gmx.ch)
-
-## License
-
-Shield: [![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]][cc-by-nc-sa]
-
-This work is licensed under a
-[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License][cc-by-nc-sa].
-
-[![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
-
-[cc-by-nc-sa]: http://creativecommons.org/licenses/by-nc-sa/4.0/
-[cc-by-nc-sa-image]: https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png
-[cc-by-nc-sa-shield]: https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg
-
-## known bugs
-- [ ] timeout doesn't raise in `httpx` ([bug](https://github.com/encode/httpx/discussions/2142))
 
 ## Disclaimer
 

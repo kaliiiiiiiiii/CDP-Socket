@@ -133,7 +133,7 @@ class SingleCDPSocket:
                             try:
                                 fut_result_setter(params)
                             except asyncio.InvalidStateError:
-                                pass # callback got cancelled
+                                pass  # callback got cancelled
                             del self._iter_callbacks[method][_id]
                     else:
                         try:
@@ -142,7 +142,10 @@ class SingleCDPSocket:
                             del self._responses[_id]
                 else:
                     exc = CDPError(error=err)
-                    self._responses[_id].set_exception(exc)
+                    try:
+                        self._responses[_id].set_exception(exc)
+                    except asyncio.InvalidStateError:
+                        del self._responses[_id]
         except websockets.exceptions.ConnectionClosedError as e:
             if self.on_closed:
                 self._exc = e
