@@ -41,6 +41,7 @@ setuptools.setup(
 
     ],
     python_requires='>=3.7',
+    license="MIT",
     install_requires=requirements,
     include_package_data=True,
     extras_require={
