@@ -11,8 +11,6 @@ import json
 from cdp_socket.exceptions import CDPError, SocketExcitedError
 from cdp_socket.utils.conn import get_websock_url, get_json
 
-from . import EXC_HANDLER
-
 
 class SingleCDPSocket:
     def __init__(self, websock_url: str, timeout: float = 10, loop: asyncio.AbstractEventLoop = None,
@@ -156,6 +154,7 @@ class SingleCDPSocket:
 
     @staticmethod
     async def _handle_callback(callback: callable, *args, **kwargs):
+        from . import EXC_HANDLER
         if callback:
             async def async_handle(awaitable):
                 try:
