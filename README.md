@@ -140,6 +140,16 @@ async def main():
 asyncio.run(main())
 ```
 
+#### Custom exception handling
+You can implement custom exception handling as following
+
+```python
+import cdp_socket
+import sys
+# print exception without traceback
+sys.modules["cdp_socket"].EXC_HANDLER = lambda e: print(f'Exception in event-handler:\n{e.__class__.__module__}.{e.__class__.__name__}: {e}', file=sys.stderr)
+```
+
 ## Help
 
 Please feel free to open an issue or fork!
