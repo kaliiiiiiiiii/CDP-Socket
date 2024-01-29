@@ -142,6 +142,7 @@ asyncio.run(main())
 
 #### Custom exception handling
 You can implement custom exception handling as following
+
 ```python
 import cdp_socket
 import sys
