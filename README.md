@@ -146,7 +146,7 @@ You can implement custom exception handling as following
 import cdp_socket
 import sys
 # print exception without traceback
-sys.modules["cdp_socket"].EXC_HANDLER = lambda e: print(f'{e.__class__.__module__}.{e.__class__.__name__}: {e}', file=sys.stderr)
+sys.modules["cdp_socket"].EXC_HANDLER = lambda e: print(f'Exception in event-handler:\n{e.__class__.__module__}.{e.__class__.__name__}: {e}', file=sys.stderr)
 ```
 
 ## Help
