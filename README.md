@@ -149,9 +149,6 @@ import sys
 sys.modules["cdp_socket"].EXC_HANDLER = lambda e: print(f'{e.__class__.__module__}.{e.__class__.__name__}: {e}', file=sys.stderr)
 ```
 
-Warning: \
-This has to be called **before importing anything else from `cdp-socket`.**
-
 ## Help
 
 Please feel free to open an issue or fork!
