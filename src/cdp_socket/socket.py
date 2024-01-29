@@ -11,6 +11,8 @@ import json
 from cdp_socket.exceptions import CDPError, SocketExcitedError
 from cdp_socket.utils.conn import get_websock_url, get_json
 
+from . import EXC_HANDLER
+
 
 class SingleCDPSocket:
     def __init__(self, websock_url: str, timeout: float = 10, loop: asyncio.AbstractEventLoop = None,
@@ -88,8 +90,8 @@ class SingleCDPSocket:
                     raise self._task._exception
                 else:
                     raise SocketExcitedError("socket coroutine excited without exception")
-            raise TimeoutError(f'got no response for method: "{method}", params: {params}'
-                               f"\nwithin {timeout} seconds")
+            raise asyncio.TimeoutError(f'got no response for method: "{method}", params: {params}'
+                                       f"\nwithin {timeout} seconds")
 
     def add_listener(self, method: str, callback: callable):
         self._events[method].append(callback)
@@ -152,11 +154,21 @@ class SingleCDPSocket:
                 for callback in self.on_closed:
                     await self._handle_callback(callback, code=e.code, reason=e.reason)
 
-    async def _handle_callback(self, callback: callable, *args, **kwargs):
+    @staticmethod
+    async def _handle_callback(callback: callable, *args, **kwargs):
         if callback:
-            res = callback(*args, **kwargs)
+            async def async_handle(awaitable):
+                try:
+                    await awaitable
+                except Exception as e:
+                    EXC_HANDLER(e)
+            try:
+                res = callback(*args, **kwargs)
+            except Exception as e:
+                EXC_HANDLER(e)
+                return
             if inspect.isawaitable(res):
-                res = self._loop.create_task(res)
+                asyncio.ensure_future(async_handle(res))
             return res
 
     async def close(self, code: int = 1000, reason: str = ''):
