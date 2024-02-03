@@ -75,7 +75,10 @@ class SingleCDPSocket:
         self._responses[_id]
         try:
             res = await asyncio.wait_for(self._responses[_id], timeout=timeout)
-            del self._responses[_id]
+            try:
+                del self._responses[_id]
+            except KeyError:
+                pass
             return res
         except asyncio.TimeoutError:
             if self._task.done():
@@ -107,8 +110,10 @@ class SingleCDPSocket:
             res = await asyncio.wait_for(_iter.__anext__(), timeout)
         except asyncio.TimeoutError as e:
             _id = _iter.id
-            if _id in self._iter_callbacks:
+            try:
                 del self._iter_callbacks[_id]
+            except KeyError:
+                pass
             raise e
         return res
 
@@ -134,18 +139,27 @@ class SingleCDPSocket:
                                 fut_result_setter(params)
                             except asyncio.InvalidStateError:
                                 pass  # callback got cancelled
-                            del self._iter_callbacks[method][_id]
+                            try:
+                                del self._iter_callbacks[method][_id]
+                            except KeyError:
+                                pass
                     else:
                         try:
                             self._responses[_id].set_result(data["result"])
                         except asyncio.InvalidStateError:
-                            del self._responses[_id]
+                            try:
+                                del self._responses[_id]
+                            except KeyError:
+                                pass
                 else:
                     exc = CDPError(error=err)
                     try:
                         self._responses[_id].set_exception(exc)
                     except asyncio.InvalidStateError:
-                        del self._responses[_id]
+                        try:
+                            del self._responses[_id]
+                        except KeyError:
+                            pass
         except websockets.exceptions.ConnectionClosedError as e:
             if self.on_closed:
                 self._exc = e
@@ -263,8 +277,11 @@ class CDPSocket:
             # noinspection PyUnusedLocal
             def remove_sock(code, reason):
                 _id = socket.id
-                if _id in self._sockets:
+                try:
                     del self._sockets[_id]
+                except KeyError:
+                    pass
+
 
             socket.on_closed.append(remove_sock)
         return socket
