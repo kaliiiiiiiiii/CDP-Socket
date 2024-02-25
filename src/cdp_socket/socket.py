@@ -121,10 +121,15 @@ class SingleCDPSocket:
         # noinspection PyUnresolvedReferences
         try:
             async for data in self._ws:
-                if sys.getsizeof(data) > 8000:
-                    data = orjson.loads(data)
-                else:
-                    data = json.loads(data)
+                try:
+                    if sys.getsizeof(data) > 8000:
+                        data = orjson.loads(data)
+                    else:
+                        data = json.loads(data)
+                except Exception as e:
+                    from cdp_socket import EXC_HANDLER
+                    EXC_HANDLER(e)
+                    data = {"method":"DecodeError", "params":{"e":e}}
                 err = data.get('error')
                 _id = data.get("id")
                 if err is None:
