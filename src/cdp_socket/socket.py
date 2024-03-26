@@ -118,10 +118,13 @@ class SingleCDPSocket:
         return res
 
     async def load_json(self, data):
-        if sys.getsizeof(data) > 8000:
-            return await self._loop.run_in_executor(None, orjson.loads,data)
-        else:
-            return json.loads(data)
+        try:
+            if sys.getsizeof(data) > 8000:
+                return await self._loop.run_in_executor(None, orjson.loads,data)
+            else:
+                return json.loads(data)
+        except orjson.JSONDecodeError:
+            return await self._loop.run_in_executor(None, json.loads,data)
 
     async def _rec_coro(self):
         # noinspection PyUnresolvedReferences

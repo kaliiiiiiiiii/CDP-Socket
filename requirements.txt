@@ -1,8 +1,8 @@
-aiohttp~=3.9.3
-websockets~=12.0
-orjson~=3.9.15
+aiohttp
+websockets
+orjson
 
 # dev
 twine
-setuptools~=69.0.3
-aiodebug~=2.3.0
+setuptools
+aiodebug
