@@ -1,7 +1,8 @@
 aiohttp
-websockets~=11.0.3
+websockets
 orjson
 
 # dev
 twine
 setuptools
+aiodebug

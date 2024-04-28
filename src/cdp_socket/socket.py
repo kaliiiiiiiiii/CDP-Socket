@@ -11,6 +11,14 @@ import json
 from cdp_socket.exceptions import CDPError, SocketExcitedError
 from cdp_socket.utils.conn import get_websock_url, get_json
 
+background_tasks = set()
+
+
+def safe_wrap_fut(fut: typing.Awaitable):
+    task = asyncio.ensure_future(fut)
+    background_tasks.add(task)
+    task.add_done_callback(background_tasks.discard)
+
 
 class SingleCDPSocket:
     def __init__(self, websock_url: str, timeout: float = 10, loop: asyncio.AbstractEventLoop = None,
@@ -117,14 +125,25 @@ class SingleCDPSocket:
             raise e
         return res
 
+    async def load_json(self, data):
+        try:
+            if sys.getsizeof(data) > 8000:
+                return await self._loop.run_in_executor(None, orjson.loads, data)
+            else:
+                return json.loads(data)
+        except orjson.JSONDecodeError:
+            return await self._loop.run_in_executor(None, json.loads, data)
+
     async def _rec_coro(self):
         # noinspection PyUnresolvedReferences
         try:
             async for data in self._ws:
-                if sys.getsizeof(data) > 8000:
-                    data = orjson.loads(data)
-                else:
-                    data = json.loads(data)
+                try:
+                    data = await self.load_json(data)
+                except Exception as e:
+                    from cdp_socket import EXC_HANDLER
+                    EXC_HANDLER(e)
+                    data = {"method": "DecodeError", "params": {"e": e}}
                 err = data.get('error')
                 _id = data.get("id")
                 if err is None:
@@ -181,7 +200,7 @@ class SingleCDPSocket:
                 EXC_HANDLER(e)
                 return
             if inspect.isawaitable(res):
-                asyncio.ensure_future(async_handle(res))
+                safe_wrap_fut(async_handle(res))
             return res
 
     async def close(self, code: int = 1000, reason: str = ''):
@@ -281,7 +300,6 @@ class CDPSocket:
                     del self._sockets[_id]
                 except KeyError:
                     pass
-
 
             socket.on_closed.append(remove_sock)
         return socket
